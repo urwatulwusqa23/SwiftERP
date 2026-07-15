@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    # Integration tests spin up their own SQL Server and Redis containers via Testcontainers,
+    # which works out of the box on GitHub-hosted Ubuntu runners (Docker is preinstalled).
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore SwiftERP.sln
+
+      - name: Build
+        run: dotnet build SwiftERP.sln --no-restore --configuration Release
+
+      - name: Unit tests
+        run: |
+          dotnet test tests/SwiftERP.Inventory.Domain.Tests --no-build --configuration Release --logger "trx;LogFileName=inventory-domain-tests.trx"
+          dotnet test tests/SwiftERP.Sales.Domain.Tests --no-build --configuration Release --logger "trx;LogFileName=sales-domain-tests.trx"
+          dotnet test tests/SwiftERP.Finance.Domain.Tests --no-build --configuration Release --logger "trx;LogFileName=finance-domain-tests.trx"
+          dotnet test tests/SwiftERP.HR.Domain.Tests --no-build --configuration Release --logger "trx;LogFileName=hr-domain-tests.trx"
+
+      - name: Integration tests
+        run: dotnet test tests/SwiftERP.Inventory.Integration.Tests --no-build --configuration Release --logger "trx;LogFileName=integration-tests.trx"
+
+      - name: Publish test results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results
+          path: "**/*.trx"

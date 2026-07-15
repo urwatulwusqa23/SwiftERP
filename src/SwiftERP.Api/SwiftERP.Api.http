@@ -1,0 +1,6 @@
+@SwiftERP.Api_HostAddress = http://localhost:5074
+
+GET {{SwiftERP.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

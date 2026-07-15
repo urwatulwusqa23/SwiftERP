@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.AspNetCore" Version="11.3.1" />
+    <PackageReference Include="MediatR" Version="14.2.0" />
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.10" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="10.0.5" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.10">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.10" />
+    <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="StackExchange.Redis" Version="3.0.17" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="10.2.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Modules\Inventory\SwiftERP.Inventory.Application\SwiftERP.Inventory.Application.csproj" />
+    <ProjectReference Include="..\Modules\Inventory\SwiftERP.Inventory.Infrastructure\SwiftERP.Inventory.Infrastructure.csproj" />
+    <ProjectReference Include="..\SwiftERP.SharedKernel\SwiftERP.SharedKernel.csproj" />
+    <ProjectReference Include="..\Modules\Finance\SwiftERP.Finance.Application\SwiftERP.Finance.Application.csproj" />
+    <ProjectReference Include="..\Modules\Finance\SwiftERP.Finance.Infrastructure\SwiftERP.Finance.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Sales\SwiftERP.Sales.Application\SwiftERP.Sales.Application.csproj" />
+    <ProjectReference Include="..\Modules\Sales\SwiftERP.Sales.Infrastructure\SwiftERP.Sales.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\HR\SwiftERP.HR.Application\SwiftERP.HR.Application.csproj" />
+    <ProjectReference Include="..\Modules\HR\SwiftERP.HR.Infrastructure\SwiftERP.HR.Infrastructure.csproj" />
+    <ProjectReference Include="..\Modules\Identity\SwiftERP.Identity.Application\SwiftERP.Identity.Application.csproj" />
+    <ProjectReference Include="..\Modules\Identity\SwiftERP.Identity.Infrastructure\SwiftERP.Identity.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
