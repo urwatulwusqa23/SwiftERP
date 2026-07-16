@@ -9,46 +9,34 @@ import {
   type LeaveBalance,
   type LeaveRequestView,
 } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import { ActionButton, Field, FieldRow, inputStyle, PageShell, Panel } from "../components/PageShell";
 
 const ACCENT = "var(--mod-hr)";
 const CURRENT_YEAR = new Date().getFullYear();
 
 export function Portal() {
+  const { user, hasAccess } = useAuth();
+  // Only HR-permissioned users can list every employee (used for the "manager" picker below) —
+  // a plain employee viewing their own portal simply won't get that dropdown populated.
   const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
-  const [selectedId, setSelectedId] = useState<string>("");
 
   useEffect(() => {
-    api.getAllEmployees().then(setEmployees);
-  }, []);
+    if (hasAccess("HR", "View")) {
+      api.getAllEmployees().then(setEmployees).catch(() => {});
+    }
+  }, [hasAccess]);
+
+  if (!user) return null;
 
   return (
     <PageShell
       moduleLabel="Employee Self-Service"
       title="My Portal"
       accent={ACCENT}
-      description="There's no login yet — pick an employee below to view their portal as if you were signed in as them."
+      description="Your own profile, attendance, leave, and documents — visible to you regardless of what HR module access your role grants."
     >
-      <Panel style={{ marginBottom: "1rem" }}>
-        <FieldRow>
-          <Field label="Viewing as">
-            <select
-              style={{ ...inputStyle, minWidth: 280 }}
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
-            >
-              <option value="">Select an employee…</option>
-              {employees.map((e) => (
-                <option key={e.id} value={e.id}>
-                  {e.fullName} {e.jobTitle ? `— ${e.jobTitle}` : ""}
-                </option>
-              ))}
-            </select>
-          </Field>
-        </FieldRow>
-      </Panel>
-
-      {selectedId && <PortalContent key={selectedId} employeeId={selectedId} employees={employees} />}
+      <PortalContent employeeId={user.employeeId} employees={employees} />
     </PageShell>
   );
 }
@@ -344,6 +332,15 @@ function DocumentsSection({ employeeId }: { employeeId: string }) {
     }
   };
 
+  const handleDownload = async (documentId: string, fileName: string) => {
+    setMessage(null);
+    try {
+      await api.downloadEmployeeDocument(documentId, fileName);
+    } catch (e) {
+      setMessage(String(e));
+    }
+  };
+
   return (
     <Panel>
       <div className="label" style={{ marginBottom: "0.9rem" }}>Documents</div>
@@ -368,9 +365,12 @@ function DocumentsSection({ employeeId }: { employeeId: string }) {
         {documents.map((d) => (
           <div key={d.id} style={rowStyle}>
             <span className="mono" style={{ fontSize: "0.8rem", color: ACCENT }}>{d.documentType}</span>
-            <a href={api.documentDownloadUrl(d.id)} target="_blank" rel="noreferrer" style={{ fontSize: "0.85rem", textDecoration: "underline" }}>
+            <button
+              onClick={() => handleDownload(d.id, d.fileName)}
+              style={{ background: "none", border: "none", color: "inherit", fontSize: "0.85rem", textDecoration: "underline", cursor: "pointer", padding: 0 }}
+            >
               {d.fileName}
-            </a>
+            </button>
             <span className="mono" style={{ fontSize: "0.72rem", color: "var(--text-faint)" }}>
               {(d.sizeBytes / 1024).toFixed(1)} KB
             </span>

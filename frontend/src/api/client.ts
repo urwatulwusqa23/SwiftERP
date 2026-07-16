@@ -1,10 +1,21 @@
+import { clearStoredSession, getStoredToken } from "../auth/AuthContext";
+
 const BASE_URL = "http://localhost:5199";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = getStoredToken();
   const response = await fetch(`${BASE_URL}${path}`, {
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
     ...options,
   });
+
+  if (response.status === 401) {
+    clearStoredSession();
+    throw new Error("Session expired — please sign in again.");
+  }
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");
@@ -119,8 +130,52 @@ export interface AttendanceRecordView {
   overtimeHours: number | null;
 }
 
+export interface ModulePermissionDto {
+  module: string;
+  accessLevel: string;
+}
+
+export interface RoleDto {
+  id: string;
+  name: string;
+  isSystemRole: boolean;
+  permissions: ModulePermissionDto[];
+}
+
+export interface UserDto {
+  id: string;
+  employeeId: string;
+  employeeName: string;
+  email: string;
+  isActive: boolean;
+  roleIds: string[];
+  roleNames: string[];
+}
+
 export const api = {
   getDashboard: () => request<DashboardSummary>("/api/v1/dashboard"),
+
+  getRoles: () => request<RoleDto[]>("/api/v1/admin/roles"),
+
+  createRole: (name: string) =>
+    request<{ id: string }>("/api/v1/admin/roles", { method: "POST", body: JSON.stringify({ name }) }),
+
+  updateRolePermission: (roleId: string, module: string, accessLevel: string) =>
+    request<void>(`/api/v1/admin/roles/${roleId}/permissions`, {
+      method: "PUT",
+      body: JSON.stringify({ module, accessLevel }),
+    }),
+
+  getUsers: () => request<UserDto[]>("/api/v1/admin/users"),
+
+  createUserAccount: (body: { employeeId: string; email: string; password: string; roleIds: string[] }) =>
+    request<{ id: string }>("/api/v1/admin/users", { method: "POST", body: JSON.stringify(body) }),
+
+  assignRole: (userId: string, roleId: string) =>
+    request<void>(`/api/v1/admin/users/${userId}/roles`, { method: "POST", body: JSON.stringify({ roleId }) }),
+
+  removeRole: (userId: string, roleId: string) =>
+    request<void>(`/api/v1/admin/users/${userId}/roles/${roleId}`, { method: "DELETE" }),
 
   getLowStockProducts: () => request<Product[]>("/api/v1/inventory/products/low-stock"),
 
@@ -201,15 +256,40 @@ export const api = {
     const form = new FormData();
     form.append("file", file);
     form.append("documentType", documentType);
+    const token = getStoredToken();
     const response = await fetch(`${BASE_URL}/api/v1/hr/employees/${id}/documents`, {
       method: "POST",
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
       body: form,
     });
+    if (response.status === 401) {
+      clearStoredSession();
+      throw new Error("Session expired — please sign in again.");
+    }
     if (!response.ok) throw new Error(`Upload failed (${response.status})`);
     return response.json() as Promise<{ id: string }>;
   },
 
-  documentDownloadUrl: (documentId: string) => `${BASE_URL}/api/v1/hr/documents/${documentId}/download`,
+  // A plain <a href> can't carry an Authorization header, and the download endpoint requires
+  // one now, so downloading means fetching the bytes ourselves and opening a local blob URL.
+  downloadEmployeeDocument: async (documentId: string, fileName: string) => {
+    const token = getStoredToken();
+    const response = await fetch(`${BASE_URL}/api/v1/hr/documents/${documentId}/download`, {
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    });
+    if (response.status === 401) {
+      clearStoredSession();
+      throw new Error("Session expired — please sign in again.");
+    }
+    if (!response.ok) throw new Error(`Download failed (${response.status})`);
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.click();
+    URL.revokeObjectURL(url);
+  },
 
   getLeaveBalances: (employeeId: string, year: number) =>
     request<LeaveBalance[]>(`/api/v1/hr/employees/${employeeId}/leave-balances?year=${year}`),

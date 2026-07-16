@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { api, type OrgChartNode } from "../api/client";
+import { api, type AttendanceRecordView, type EmployeeSummary, type OrgChartNode } from "../api/client";
 import { ActionButton, Field, FieldRow, inputStyle, PageShell, Panel } from "../components/PageShell";
 
 const ACCENT = "var(--mod-hr)";
@@ -10,6 +10,103 @@ interface RunEntry {
   year: number;
   month: number;
   status: "Draft" | "Posted";
+}
+
+function AttendancePanel() {
+  const [employees, setEmployees] = useState<EmployeeSummary[]>([]);
+  const [selectedId, setSelectedId] = useState("");
+  const [records, setRecords] = useState<AttendanceRecordView[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api.getAllEmployees().then((list) => {
+      setEmployees(list);
+      if (list.length > 0) setSelectedId(list[0].id);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!selectedId) return;
+    setLoading(true);
+    api
+      .getAttendance(selectedId)
+      .then(setRecords)
+      .finally(() => setLoading(false));
+  }, [selectedId]);
+
+  const openRecord = records.find((r) => !r.clockOutUtc);
+
+  return (
+    <Panel>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "0.9rem", flexWrap: "wrap", gap: "0.6rem" }}>
+        <div>
+          <div className="label">Attendance</div>
+          <p style={{ fontSize: "0.78rem", color: "var(--text-faint)", marginTop: "0.2rem" }}>
+            Clock in/out happens from each employee's own Portal — this view is read-only.
+          </p>
+        </div>
+        <select style={{ ...inputStyle, minWidth: 220 }} value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+          {employees.length === 0 && <option value="">No employees yet</option>}
+          {employees.map((e) => (
+            <option key={e.id} value={e.id}>
+              {e.fullName} {e.jobTitle ? `— ${e.jobTitle}` : ""}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {selectedId && (
+        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.8rem" }}>
+          <span
+            className="mono"
+            style={{
+              fontSize: "0.68rem",
+              color: openRecord ? "var(--success)" : "var(--text-faint)",
+              border: `1px solid ${openRecord ? "var(--success)" : "var(--border)"}`,
+              borderRadius: "var(--radius)",
+              padding: "0.2rem 0.6rem",
+            }}
+          >
+            {openRecord ? "Currently clocked in" : "Not clocked in"}
+          </span>
+        </div>
+      )}
+
+      <div style={{ display: "flex", flexDirection: "column", gap: "0.4rem" }}>
+        {loading && <p style={{ color: "var(--text-faint)", fontSize: "0.85rem" }}>Loading…</p>}
+        {!loading && records.length === 0 && (
+          <p style={{ color: "var(--text-faint)", fontSize: "0.85rem" }}>No attendance records for this employee yet.</p>
+        )}
+        {!loading &&
+          records.slice(0, 10).map((r) => (
+            <div
+              key={r.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "0.6rem 0.8rem",
+                background: "var(--bg-elevated)",
+                borderRadius: "var(--radius)",
+                borderLeft: `2px solid ${ACCENT}`,
+              }}
+            >
+              <span className="mono" style={{ fontSize: "0.8rem" }}>
+                {r.date}
+              </span>
+              <span className="mono" style={{ fontSize: "0.8rem", color: "var(--text-dim)" }}>
+                {new Date(r.clockInUtc).toLocaleTimeString()} →{" "}
+                {r.clockOutUtc ? new Date(r.clockOutUtc).toLocaleTimeString() : "…"}
+              </span>
+              <span className="mono" style={{ fontSize: "0.8rem" }}>
+                {r.workedHours != null ? `${r.workedHours}h` : "—"}
+                {r.overtimeHours ? ` (+${r.overtimeHours}h OT)` : ""}
+              </span>
+            </div>
+          ))}
+      </div>
+    </Panel>
+  );
 }
 
 function OrgChartTree({ node, depth = 0 }: { node: OrgChartNode; depth?: number }) {
@@ -143,6 +240,8 @@ export function HR() {
             </ActionButton>
           </FieldRow>
         </Panel>
+
+        <AttendancePanel />
 
         <OrgChartPanel />
 
