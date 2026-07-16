@@ -20,7 +20,7 @@ export function Finance() {
       moduleLabel="Finance & Ledger"
       title="Running Balance"
       accent={ACCENT}
-      description="Every confirmed sale posts a SaleRevenue entry; every posted payroll run posts a PayrollExpense entry. The balance below is the signed sum across all of them."
+      description="Signed sum of all sale revenue and payroll expense entries."
     >
       <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "1rem", maxWidth: 360 }}>
         <StatCard

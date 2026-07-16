@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { api, type Product } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import { ActionButton, Field, FieldRow, inputStyle, PageShell, Panel } from "../components/PageShell";
 
 const ACCENT = "var(--mod-inventory)";
 
 export function Inventory() {
+  const { hasAccess } = useAuth();
+  const canEdit = hasAccess("Inventory", "Edit");
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ sku: "", name: "", reorderThreshold: "5", initialQuantity: "20" });
@@ -52,54 +55,56 @@ export function Inventory() {
       moduleLabel="Inventory & Procurement"
       title="Stock & Reorder Monitor"
       accent={ACCENT}
-      description="Products at or below their reorder threshold. Crossing the threshold fires a stock.low event, visible live on the Deck."
+      description="Products at or below their reorder threshold."
     >
       <div style={{ display: "grid", gap: "1rem" }}>
-        <Panel>
-          <div className="label" style={{ marginBottom: "0.9rem" }}>
-            Create Product
-          </div>
-          <FieldRow>
-            <Field label="SKU">
-              <input
-                style={inputStyle}
-                placeholder="auto-generated"
-                value={form.sku}
-                onChange={(e) => setForm({ ...form, sku: e.target.value })}
-              />
-            </Field>
-            <Field label="Name">
-              <input
-                style={inputStyle}
-                placeholder="Product name"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
-              />
-            </Field>
-            <Field label="Reorder Threshold">
-              <input
-                style={{ ...inputStyle, width: 90 }}
-                type="number"
-                value={form.reorderThreshold}
-                onChange={(e) => setForm({ ...form, reorderThreshold: e.target.value })}
-              />
-            </Field>
-            <Field label="Initial Qty">
-              <input
-                style={{ ...inputStyle, width: 90 }}
-                type="number"
-                value={form.initialQuantity}
-                onChange={(e) => setForm({ ...form, initialQuantity: e.target.value })}
-              />
-            </Field>
-            <ActionButton accent={ACCENT} onClick={handleCreate}>
-              Create
-            </ActionButton>
-          </FieldRow>
-          {message && (
-            <p style={{ marginTop: "0.7rem", fontSize: "0.8rem", color: "var(--text-dim)" }}>{message}</p>
-          )}
-        </Panel>
+        {canEdit && (
+          <Panel>
+            <div className="label" style={{ marginBottom: "0.9rem" }}>
+              Create Product
+            </div>
+            <FieldRow>
+              <Field label="SKU">
+                <input
+                  style={inputStyle}
+                  placeholder="auto-generated"
+                  value={form.sku}
+                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
+                />
+              </Field>
+              <Field label="Name">
+                <input
+                  style={inputStyle}
+                  placeholder="Product name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                />
+              </Field>
+              <Field label="Reorder Threshold">
+                <input
+                  style={{ ...inputStyle, width: 90 }}
+                  type="number"
+                  value={form.reorderThreshold}
+                  onChange={(e) => setForm({ ...form, reorderThreshold: e.target.value })}
+                />
+              </Field>
+              <Field label="Initial Qty">
+                <input
+                  style={{ ...inputStyle, width: 90 }}
+                  type="number"
+                  value={form.initialQuantity}
+                  onChange={(e) => setForm({ ...form, initialQuantity: e.target.value })}
+                />
+              </Field>
+              <ActionButton accent={ACCENT} onClick={handleCreate}>
+                Create
+              </ActionButton>
+            </FieldRow>
+            {message && (
+              <p style={{ marginTop: "0.7rem", fontSize: "0.8rem", color: "var(--text-dim)" }}>{message}</p>
+            )}
+          </Panel>
+        )}
 
         <Panel>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "0.9rem" }}>
@@ -145,15 +150,16 @@ export function Inventory() {
                   <span className="mono" style={{ fontSize: "0.85rem", color: "var(--danger)" }}>
                     {p.quantityOnHand} / {p.reorderThreshold}
                   </span>
-                  <button
-                    onClick={() => handleAdjust(p.id, -1)}
-                    style={ghostBtn}
-                  >
-                    −1
-                  </button>
-                  <button onClick={() => handleAdjust(p.id, 5)} style={ghostBtn}>
-                    +5
-                  </button>
+                  {canEdit && (
+                    <>
+                      <button onClick={() => handleAdjust(p.id, -1)} style={ghostBtn}>
+                        −1
+                      </button>
+                      <button onClick={() => handleAdjust(p.id, 5)} style={ghostBtn}>
+                        +5
+                      </button>
+                    </>
+                  )}
                 </div>
               </motion.div>
             ))}

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { api, type AttendanceRecordView, type EmployeeSummary, type OrgChartNode } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import { ActionButton, Field, FieldRow, inputStyle, PageShell, Panel } from "../components/PageShell";
 
 const ACCENT = "var(--mod-hr)";
@@ -42,7 +43,7 @@ function AttendancePanel() {
         <div>
           <div className="label">Attendance</div>
           <p style={{ fontSize: "0.78rem", color: "var(--text-faint)", marginTop: "0.2rem" }}>
-            Clock in/out happens from each employee's own Portal — this view is read-only.
+            Read-only — clock in/out from the Portal.
           </p>
         </div>
         <select style={{ ...inputStyle, minWidth: 220 }} value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
@@ -159,6 +160,9 @@ function OrgChartPanel() {
 }
 
 export function HR() {
+  const { hasAccess } = useAuth();
+  const canHire = hasAccess("HR", "Edit");
+  const canPayroll = hasAccess("HR", "Full");
   const [employeeForm, setEmployeeForm] = useState({ fullName: "", email: "", monthlySalary: "4000" });
   const [runForm, setRunForm] = useState({ year: "2026", month: "7" });
   const [runs, setRuns] = useState<RunEntry[]>([]);
@@ -205,79 +209,83 @@ export function HR() {
       moduleLabel="HR & Payroll"
       title="Employees & Payroll Runs"
       accent={ACCENT}
-      description="Posting a payroll run marks it Posted and records a Finance ledger expense atomically, using the same DbContext-sharing pattern as Sales."
+      description="Employees, attendance, org chart, and payroll."
     >
       <div style={{ display: "grid", gap: "1rem" }}>
-        <Panel>
-          <div className="label" style={{ marginBottom: "0.9rem" }}>
-            Hire Employee
-          </div>
-          <FieldRow>
-            <Field label="Full Name">
-              <input
-                style={inputStyle}
-                value={employeeForm.fullName}
-                onChange={(e) => setEmployeeForm({ ...employeeForm, fullName: e.target.value })}
-              />
-            </Field>
-            <Field label="Email">
-              <input
-                style={inputStyle}
-                value={employeeForm.email}
-                onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })}
-              />
-            </Field>
-            <Field label="Monthly Salary">
-              <input
-                style={{ ...inputStyle, width: 110 }}
-                type="number"
-                value={employeeForm.monthlySalary}
-                onChange={(e) => setEmployeeForm({ ...employeeForm, monthlySalary: e.target.value })}
-              />
-            </Field>
-            <ActionButton accent={ACCENT} onClick={handleHire}>
-              Hire
-            </ActionButton>
-          </FieldRow>
-        </Panel>
+        {canHire && (
+          <Panel>
+            <div className="label" style={{ marginBottom: "0.9rem" }}>
+              Hire Employee
+            </div>
+            <FieldRow>
+              <Field label="Full Name">
+                <input
+                  style={inputStyle}
+                  value={employeeForm.fullName}
+                  onChange={(e) => setEmployeeForm({ ...employeeForm, fullName: e.target.value })}
+                />
+              </Field>
+              <Field label="Email">
+                <input
+                  style={inputStyle}
+                  value={employeeForm.email}
+                  onChange={(e) => setEmployeeForm({ ...employeeForm, email: e.target.value })}
+                />
+              </Field>
+              <Field label="Monthly Salary">
+                <input
+                  style={{ ...inputStyle, width: 110 }}
+                  type="number"
+                  value={employeeForm.monthlySalary}
+                  onChange={(e) => setEmployeeForm({ ...employeeForm, monthlySalary: e.target.value })}
+                />
+              </Field>
+              <ActionButton accent={ACCENT} onClick={handleHire}>
+                Hire
+              </ActionButton>
+            </FieldRow>
+          </Panel>
+        )}
 
         <AttendancePanel />
 
         <OrgChartPanel />
 
-        <Panel>
-          <div className="label" style={{ marginBottom: "0.9rem" }}>
-            Create Payroll Run
-          </div>
-          <FieldRow>
-            <Field label="Year">
-              <input
-                style={{ ...inputStyle, width: 90 }}
-                type="number"
-                value={runForm.year}
-                onChange={(e) => setRunForm({ ...runForm, year: e.target.value })}
-              />
-            </Field>
-            <Field label="Month">
-              <input
-                style={{ ...inputStyle, width: 70 }}
-                type="number"
-                min={1}
-                max={12}
-                value={runForm.month}
-                onChange={(e) => setRunForm({ ...runForm, month: e.target.value })}
-              />
-            </Field>
-            <ActionButton accent={ACCENT} onClick={handleCreateRun}>
-              Create Draft Run
-            </ActionButton>
-          </FieldRow>
-          {message && (
-            <p style={{ marginTop: "0.7rem", fontSize: "0.8rem", color: "var(--text-dim)" }}>{message}</p>
-          )}
-        </Panel>
+        {canPayroll && (
+          <Panel>
+            <div className="label" style={{ marginBottom: "0.9rem" }}>
+              Create Payroll Run
+            </div>
+            <FieldRow>
+              <Field label="Year">
+                <input
+                  style={{ ...inputStyle, width: 90 }}
+                  type="number"
+                  value={runForm.year}
+                  onChange={(e) => setRunForm({ ...runForm, year: e.target.value })}
+                />
+              </Field>
+              <Field label="Month">
+                <input
+                  style={{ ...inputStyle, width: 70 }}
+                  type="number"
+                  min={1}
+                  max={12}
+                  value={runForm.month}
+                  onChange={(e) => setRunForm({ ...runForm, month: e.target.value })}
+                />
+              </Field>
+              <ActionButton accent={ACCENT} onClick={handleCreateRun}>
+                Create Draft Run
+              </ActionButton>
+            </FieldRow>
+            {message && (
+              <p style={{ marginTop: "0.7rem", fontSize: "0.8rem", color: "var(--text-dim)" }}>{message}</p>
+            )}
+          </Panel>
+        )}
 
-        {runs.length > 0 && (
+        {canPayroll && runs.length > 0 && (
           <Panel>
             <div className="label" style={{ marginBottom: "0.9rem" }}>
               Runs This Session

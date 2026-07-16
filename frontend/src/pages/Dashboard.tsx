@@ -55,18 +55,13 @@ export function Dashboard() {
           style={{ marginBottom: "3rem", maxWidth: 640 }}
         >
           <div className="label" style={{ marginBottom: "0.8rem" }}>
-            Modular ERP — Live System Status
+            Live System Status
           </div>
-          <h1 style={{ fontSize: "2.6rem", lineHeight: 1.1, marginBottom: "1rem" }}>
+          <h1 style={{ fontSize: "2.6rem", lineHeight: 1.1 }}>
             Four modules.
             <br />
             One transaction boundary.
           </h1>
-          <p style={{ color: "var(--text-dim)", fontSize: "0.95rem", lineHeight: 1.6 }}>
-            Inventory, Sales, Finance and HR run as independent modules that share a single database
-            and commit cross-module transactions atomically. The graph above updates in real time as
-            events move through the system.
-          </p>
         </motion.div>
 
         <div
@@ -117,16 +112,11 @@ export function Dashboard() {
             }}
           >
             <div className="label" style={{ marginBottom: "0.8rem" }}>
-              How the atomicity actually works
+              Cross-Module Transactions
             </div>
-            <p style={{ color: "var(--text-dim)", fontSize: "0.88rem", lineHeight: 1.7 }}>
-              When a sale is confirmed, <span className="mono" style={{ color: "var(--mod-sales)" }}>SalesDbContext</span> tracks
-              the Product entity being decremented <em>and</em> the LedgerEntry being posted — so a single{" "}
-              <span className="mono">SaveChangesAsync()</span> commits the stock change and the
-              revenue entry in one SQL transaction. Insufficient stock throws before that call ever
-              happens, so nothing partially commits. Posting a payroll run uses the identical pattern
-              against Finance — a different module, proving the technique generalizes rather than being
-              a one-off trick.
+            <p style={{ color: "var(--text-dim)", fontSize: "0.88rem", lineHeight: 1.6 }}>
+              Confirming a sale decrements stock and posts a ledger entry in one atomic transaction.
+              Same pattern powers payroll.
             </p>
           </motion.div>
 

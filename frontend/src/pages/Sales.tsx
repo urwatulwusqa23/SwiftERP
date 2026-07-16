@@ -1,11 +1,14 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { api, type SaleOrder } from "../api/client";
+import { useAuth } from "../auth/AuthContext";
 import { ActionButton, Field, FieldRow, inputStyle, PageShell, Panel } from "../components/PageShell";
 
 const ACCENT = "var(--mod-sales)";
 
 export function Sales() {
+  const { hasAccess } = useAuth();
+  const canEdit = hasAccess("Sales", "Edit");
   const [form, setForm] = useState({ productId: "", quantity: "1", unitPrice: "10" });
   const [orders, setOrders] = useState<SaleOrder[]>([]);
   const [message, setMessage] = useState<string | null>(null);
@@ -45,46 +48,48 @@ export function Sales() {
       moduleLabel="Sales & Invoicing"
       title="Sale Orders"
       accent={ACCENT}
-      description="Confirming a sale order decrements Inventory stock and posts a Finance ledger entry — atomically. Insufficient stock rolls back both."
+      description="Create, confirm, and track sale orders."
     >
       <div style={{ display: "grid", gap: "1rem" }}>
-        <Panel>
-          <div className="label" style={{ marginBottom: "0.9rem" }}>
-            New Draft Order
-          </div>
-          <FieldRow>
-            <Field label="Product ID">
-              <input
-                style={{ ...inputStyle, width: 280 }}
-                placeholder="paste from Inventory"
-                value={form.productId}
-                onChange={(e) => setForm({ ...form, productId: e.target.value })}
-              />
-            </Field>
-            <Field label="Quantity">
-              <input
-                style={{ ...inputStyle, width: 80 }}
-                type="number"
-                value={form.quantity}
-                onChange={(e) => setForm({ ...form, quantity: e.target.value })}
-              />
-            </Field>
-            <Field label="Unit Price">
-              <input
-                style={{ ...inputStyle, width: 90 }}
-                type="number"
-                value={form.unitPrice}
-                onChange={(e) => setForm({ ...form, unitPrice: e.target.value })}
-              />
-            </Field>
-            <ActionButton accent={ACCENT} onClick={handleCreate}>
-              Create Draft
-            </ActionButton>
-          </FieldRow>
-          {message && (
-            <p style={{ marginTop: "0.7rem", fontSize: "0.8rem", color: "var(--text-dim)" }}>{message}</p>
-          )}
-        </Panel>
+        {canEdit && (
+          <Panel>
+            <div className="label" style={{ marginBottom: "0.9rem" }}>
+              New Draft Order
+            </div>
+            <FieldRow>
+              <Field label="Product ID">
+                <input
+                  style={{ ...inputStyle, width: 280 }}
+                  placeholder="paste from Inventory"
+                  value={form.productId}
+                  onChange={(e) => setForm({ ...form, productId: e.target.value })}
+                />
+              </Field>
+              <Field label="Quantity">
+                <input
+                  style={{ ...inputStyle, width: 80 }}
+                  type="number"
+                  value={form.quantity}
+                  onChange={(e) => setForm({ ...form, quantity: e.target.value })}
+                />
+              </Field>
+              <Field label="Unit Price">
+                <input
+                  style={{ ...inputStyle, width: 90 }}
+                  type="number"
+                  value={form.unitPrice}
+                  onChange={(e) => setForm({ ...form, unitPrice: e.target.value })}
+                />
+              </Field>
+              <ActionButton accent={ACCENT} onClick={handleCreate}>
+                Create Draft
+              </ActionButton>
+            </FieldRow>
+            {message && (
+              <p style={{ marginTop: "0.7rem", fontSize: "0.8rem", color: "var(--text-dim)" }}>{message}</p>
+            )}
+          </Panel>
+        )}
 
         <Panel>
           <div className="label" style={{ marginBottom: "0.9rem" }}>
@@ -122,7 +127,7 @@ export function Sales() {
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "0.7rem" }}>
                   <StatusChip status={o.status} />
-                  {o.status === "Draft" && (
+                  {canEdit && o.status === "Draft" && (
                     <ActionButton accent={ACCENT} onClick={() => handleConfirm(o.id)}>
                       Confirm
                     </ActionButton>

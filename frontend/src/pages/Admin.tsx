@@ -12,7 +12,7 @@ export function Admin() {
       moduleLabel="Access Control"
       title="Admin Portal"
       accent={ACCENT}
-      description="Define what each role can see and do per module, then assign roles to user accounts. Changes take effect the next time that user logs in."
+      description="Manage role permissions and user accounts."
     >
       <div style={{ display: "grid", gap: "1rem" }}>
         <RolesPanel />

@@ -34,7 +34,7 @@ export function Portal() {
       moduleLabel="Employee Self-Service"
       title="My Portal"
       accent={ACCENT}
-      description="Your own profile, attendance, leave, and documents — visible to you regardless of what HR module access your role grants."
+      description="Your profile, attendance, leave, and documents."
     >
       <PortalContent employeeId={user.employeeId} employees={employees} />
     </PageShell>
