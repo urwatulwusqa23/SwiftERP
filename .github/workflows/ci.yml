@@ -21,10 +21,10 @@ jobs:
           dotnet-version: "10.0.x"
 
       - name: Restore
-        run: dotnet restore SwiftERP.sln
+        run: dotnet restore SwiftERP.slnx
 
       - name: Build
-        run: dotnet build SwiftERP.sln --no-restore --configuration Release
+        run: dotnet build SwiftERP.slnx --no-restore --configuration Release
 
       - name: Unit tests
         run: |
