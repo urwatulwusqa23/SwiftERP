@@ -1,6 +1,8 @@
 import { clearStoredSession, getStoredToken } from "../auth/AuthContext";
 
-const BASE_URL = "http://localhost:5199";
+// VITE_API_URL is injected at build time (see .env.production / Render's env vars) — falls back
+// to the local dev Api port so `npm run dev` keeps working with no config.
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5199";
 
 async function request<T>(path: string, options?: RequestInit): Promise<T> {
   const token = getStoredToken();

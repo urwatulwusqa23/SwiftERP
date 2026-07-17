@@ -63,7 +63,7 @@ function loadSession(): StoredSession | null {
   }
 }
 
-const BASE_URL = "http://localhost:5199";
+const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:5199";
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<StoredSession | null>(() => loadSession());

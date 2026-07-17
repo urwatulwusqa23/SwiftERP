@@ -44,10 +44,19 @@ try
         .WriteTo.Console());
 
     const string DevFrontendCorsPolicy = "DevFrontend";
+    // "Cors:AllowedOrigins" lets the deployed frontend's real origin be added via an env var
+    // (e.g. Render's dashboard) without touching code; local dev origins are always included so
+    // `npm run dev` keeps working out of the box.
+    var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+    var allowedOrigins = new[] { "http://localhost:5173", "http://127.0.0.1:5173" }
+        .Concat(configuredOrigins)
+        .Distinct()
+        .ToArray();
+
     builder.Services.AddCors(options =>
     {
         options.AddPolicy(DevFrontendCorsPolicy, policy => policy
-            .WithOrigins("http://localhost:5173", "http://127.0.0.1:5173")
+            .WithOrigins(allowedOrigins)
             .AllowAnyHeader()
             .AllowAnyMethod());
     });
