@@ -32,6 +32,9 @@
   <Folder Name="/tests/">
     <Project Path="tests/SwiftERP.Finance.Domain.Tests/SwiftERP.Finance.Domain.Tests.csproj" />
     <Project Path="tests/SwiftERP.HR.Domain.Tests/SwiftERP.HR.Domain.Tests.csproj" />
+    <Project Path="tests/SwiftERP.Identity.Application.Tests/SwiftERP.Identity.Application.Tests.csproj" />
+    <Project Path="tests/SwiftERP.Identity.Domain.Tests/SwiftERP.Identity.Domain.Tests.csproj" />
+    <Project Path="tests/SwiftERP.Identity.Infrastructure.Tests/SwiftERP.Identity.Infrastructure.Tests.csproj" />
     <Project Path="tests/SwiftERP.Inventory.Domain.Tests/SwiftERP.Inventory.Domain.Tests.csproj" />
     <Project Path="tests/SwiftERP.Inventory.Integration.Tests/SwiftERP.Inventory.Integration.Tests.csproj" />
     <Project Path="tests/SwiftERP.Sales.Domain.Tests/SwiftERP.Sales.Domain.Tests.csproj" />

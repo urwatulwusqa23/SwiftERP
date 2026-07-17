@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { NOTIFICATIONS_STREAM_URL } from "../api/client";
+import { getStoredToken } from "../auth/AuthContext";
 import type { ModuleKey } from "../components/networkLayout";
 
 export interface LiveNotification {
@@ -24,7 +25,12 @@ export function useNotificationStream(onEvent?: (n: LiveNotification) => void) {
   onEventRef.current = onEvent;
 
   useEffect(() => {
-    const source = new EventSource(NOTIFICATIONS_STREAM_URL);
+    const token = getStoredToken();
+    if (!token) return;
+
+    // EventSource can't set an Authorization header, so the token rides along as a query
+    // param — the Api's JWT bearer handler is configured to read it from there for this path.
+    const source = new EventSource(`${NOTIFICATIONS_STREAM_URL}?access_token=${encodeURIComponent(token)}`);
 
     source.onopen = () => setConnected(true);
     source.onerror = () => setConnected(false);

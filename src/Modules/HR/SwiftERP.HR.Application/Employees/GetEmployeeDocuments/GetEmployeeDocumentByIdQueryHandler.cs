@@ -11,6 +11,6 @@ public class GetEmployeeDocumentByIdQueryHandler(IEmployeeDocumentRepository doc
         var document = await documentRepository.GetByIdAsync(request.DocumentId, cancellationToken);
         return document is null
             ? null
-            : new DocumentDownloadDto(document.FileName, document.ContentType, document.StoragePath);
+            : new DocumentDownloadDto(document.EmployeeId, document.FileName, document.ContentType, document.StoragePath);
     }
 }

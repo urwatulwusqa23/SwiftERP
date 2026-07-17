@@ -4,6 +4,7 @@ using SwiftERP.Identity.Domain.Roles;
 using SwiftERP.Sales.Application.SaleOrders.ConfirmSaleOrder;
 using SwiftERP.Sales.Application.SaleOrders.CreateSaleOrder;
 using SwiftERP.Sales.Application.SaleOrders.GetSaleOrder;
+using SwiftERP.Sales.Application.SaleOrders.GetSaleOrders;
 using SwiftERP.Sales.Application.SaleOrders.MarkSaleOrderPaid;
 
 namespace SwiftERP.Api.Endpoints;
@@ -21,6 +22,10 @@ public static class SalesEndpoints
                 ? Results.Created($"/api/v1/sales/orders/{result.Value}", new { id = result.Value })
                 : Results.BadRequest(new { error = result.Error });
         }).RequireModule(Module.Sales, AccessLevel.Edit);
+
+        orders.MapGet("/", async (ISender sender) =>
+            Results.Ok(await sender.Send(new GetSaleOrdersQuery())))
+            .RequireModule(Module.Sales, AccessLevel.View);
 
         orders.MapGet("/{id:guid}", async (Guid id, ISender sender) =>
         {

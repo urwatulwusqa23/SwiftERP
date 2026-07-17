@@ -206,6 +206,8 @@ export const api = {
       body: JSON.stringify(body),
     }),
 
+  getSaleOrders: () => request<SaleOrder[]>("/api/v1/sales/orders"),
+
   getSaleOrder: (id: string) => request<SaleOrder>(`/api/v1/sales/orders/${id}`),
 
   confirmSaleOrder: (id: string) =>

@@ -1,7 +1,9 @@
 using System.Text;
 using System.Text.Json.Serialization;
+using System.Threading.RateLimiting;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using StackExchange.Redis;
@@ -55,6 +57,8 @@ try
     builder.Services.ConfigureHttpJsonOptions(options =>
         options.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
+    builder.Services.AddHealthChecks();
+
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen(options =>
     {
@@ -98,8 +102,43 @@ try
                 ValidateLifetime = true,
                 ClockSkew = TimeSpan.FromMinutes(1),
             };
+
+            // EventSource (used for the SSE notification stream) can't set an Authorization
+            // header, so that one path accepts the token as a query param instead — same
+            // validation, just a different place to read it from.
+            options.Events = new JwtBearerEvents
+            {
+                OnMessageReceived = context =>
+                {
+                    if (context.Request.Path == "/api/v1/notifications/stream"
+                        && context.Request.Query.TryGetValue("access_token", out var token))
+                    {
+                        context.Token = token;
+                    }
+                    return Task.CompletedTask;
+                },
+            };
         });
     builder.Services.AddAuthorization();
+
+    // Login is the one endpoint an attacker can hammer without a token, so it gets its own
+    // per-IP fixed window rather than relying on the (currently nonexistent) account lockout —
+    // 10 attempts/minute is generous for a real user mistyping a password, punishing for a
+    // credential-stuffing script.
+    const string LoginRateLimitPolicy = "LoginRateLimit";
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+        options.AddPolicy(LoginRateLimitPolicy, httpContext =>
+            RateLimitPartition.GetFixedWindowLimiter(
+                httpContext.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+                _ => new FixedWindowRateLimiterOptions
+                {
+                    PermitLimit = 10,
+                    Window = TimeSpan.FromMinutes(1),
+                    QueueLimit = 0,
+                }));
+    });
 
     // Options delegates (AddStackExchangeRedisCache) and DI factory delegates (AddSingleton) both
     // resolve lazily on first use, not at registration time, so — unlike the DbContext connection
@@ -133,6 +172,7 @@ try
 
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseRateLimiter();
 
     // Best-effort: a fresh dev DB with no roles/admin yet shouldn't block the API from starting,
     // and a WebApplicationFactory-based test host has no real SQL Server behind it at all.
@@ -146,6 +186,8 @@ try
     {
         Log.Warning(ex, "Identity seeding skipped — database may not be reachable yet.");
     }
+
+    app.MapHealthChecks("/health").AllowAnonymous();
 
     app.MapIdentityEndpoints();
     app.MapInventoryEndpoints();

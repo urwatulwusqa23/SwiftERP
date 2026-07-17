@@ -32,6 +32,9 @@ jobs:
           dotnet test tests/SwiftERP.Sales.Domain.Tests --no-build --configuration Release --logger "trx;LogFileName=sales-domain-tests.trx"
           dotnet test tests/SwiftERP.Finance.Domain.Tests --no-build --configuration Release --logger "trx;LogFileName=finance-domain-tests.trx"
           dotnet test tests/SwiftERP.HR.Domain.Tests --no-build --configuration Release --logger "trx;LogFileName=hr-domain-tests.trx"
+          dotnet test tests/SwiftERP.Identity.Domain.Tests --no-build --configuration Release --logger "trx;LogFileName=identity-domain-tests.trx"
+          dotnet test tests/SwiftERP.Identity.Application.Tests --no-build --configuration Release --logger "trx;LogFileName=identity-application-tests.trx"
+          dotnet test tests/SwiftERP.Identity.Infrastructure.Tests --no-build --configuration Release --logger "trx;LogFileName=identity-infrastructure-tests.trx"
 
       - name: Integration tests
         run: dotnet test tests/SwiftERP.Inventory.Integration.Tests --no-build --configuration Release --logger "trx;LogFileName=integration-tests.trx"
@@ -42,3 +45,24 @@ jobs:
         with:
           name: test-results
           path: "**/*.trx"
+
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install
+        working-directory: frontend
+        run: npm ci
+
+      - name: Typecheck + build
+        working-directory: frontend
+        run: npm run build

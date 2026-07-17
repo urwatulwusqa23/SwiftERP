@@ -41,6 +41,6 @@ public static class NotificationStreamEndpoints
             {
                 await channel.UnsubscribeAsync();
             }
-        }).WithTags("Notifications");
+        }).WithTags("Notifications").RequireAuthorization();
     }
 }

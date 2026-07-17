@@ -1,5 +1,6 @@
 using MediatR;
 using SwiftERP.Api.Authorization;
+using SwiftERP.Identity.Application.Abstractions;
 using SwiftERP.Identity.Domain.Roles;
 using SwiftERP.HR.Application.Attendance.ClockIn;
 using SwiftERP.HR.Application.Attendance.ClockOut;
@@ -100,15 +101,17 @@ public static class HrEndpoints
             Results.Ok(await sender.Send(new GetEmployeeDocumentsQuery(id))))
             .RequireSelfOrModule(Module.HR, AccessLevel.View);
 
-        // Download is keyed by an unguessable document GUID rather than employee id, so a
-        // self-vs-module check isn't wired here — any authenticated user who has (or is handed)
-        // the link can fetch it. Tightening this to an owner check is tracked as a follow-up.
         app.MapGet("/api/v1/hr/documents/{documentId:guid}/download", async (
-            Guid documentId, ISender sender, IDocumentStorage storage, CancellationToken ct) =>
+            Guid documentId, HttpContext httpContext, ISender sender, IDocumentStorage storage, CancellationToken ct) =>
         {
             var metadata = await sender.Send(new GetEmployeeDocumentByIdQuery(documentId), ct);
             if (metadata is null)
                 return Results.NotFound();
+
+            var callerEmployeeId = httpContext.User.FindFirst(SwiftErpClaimTypes.EmployeeId)?.Value;
+            var isSelf = Guid.TryParse(callerEmployeeId, out var callerGuid) && callerGuid == metadata.EmployeeId;
+            if (!isSelf && !RequireModuleAccessFilter.HasAccess(httpContext.User, Module.HR, AccessLevel.View))
+                return Results.Json(new { error = "Requires View access to HR, or must be your own document." }, statusCode: StatusCodes.Status403Forbidden);
 
             var stream = await storage.OpenReadAsync(metadata.StoragePath, ct);
             return Results.File(stream, metadata.ContentType, metadata.FileName);
@@ -128,15 +131,17 @@ public static class HrEndpoints
                 : Results.BadRequest(new { error = result.Error });
         }).RequireAuthorization();
 
-        leave.MapPost("/{id:guid}/approve", async (Guid id, ISender sender) =>
+        leave.MapPost("/{id:guid}/approve", async (Guid id, HttpContext httpContext, ISender sender) =>
         {
-            var result = await sender.Send(new ApproveLeaveCommand(id));
+            var (approverEmployeeId, hasFullHr) = ResolveApprover(httpContext);
+            var result = await sender.Send(new ApproveLeaveCommand(id, approverEmployeeId, hasFullHr));
             return result.IsSuccess ? Results.NoContent() : Results.BadRequest(new { error = result.Error });
         }).RequireModule(Module.HR, AccessLevel.Edit);
 
-        leave.MapPost("/{id:guid}/reject", async (Guid id, RejectLeaveRequest request, ISender sender) =>
+        leave.MapPost("/{id:guid}/reject", async (Guid id, RejectLeaveRequest request, HttpContext httpContext, ISender sender) =>
         {
-            var result = await sender.Send(new RejectLeaveCommand(id, request.Note));
+            var (approverEmployeeId, hasFullHr) = ResolveApprover(httpContext);
+            var result = await sender.Send(new RejectLeaveCommand(id, request.Note, approverEmployeeId, hasFullHr));
             return result.IsSuccess ? Results.NoContent() : Results.BadRequest(new { error = result.Error });
         }).RequireModule(Module.HR, AccessLevel.Edit);
 
@@ -177,6 +182,14 @@ public static class HrEndpoints
             var result = await sender.Send(new PostPayrollRunCommand(id));
             return result.IsSuccess ? Results.NoContent() : Results.BadRequest(new { error = result.Error });
         }).RequireModule(Module.HR, AccessLevel.Full);
+    }
+
+    private static (Guid EmployeeId, bool HasFullHrAccess) ResolveApprover(HttpContext httpContext)
+    {
+        var employeeIdClaim = httpContext.User.FindFirst(SwiftErpClaimTypes.EmployeeId)?.Value;
+        Guid.TryParse(employeeIdClaim, out var employeeId);
+        var hasFullHr = RequireModuleAccessFilter.HasAccess(httpContext.User, Module.HR, AccessLevel.Full);
+        return (employeeId, hasFullHr);
     }
 }
 

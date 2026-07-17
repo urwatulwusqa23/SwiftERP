@@ -20,7 +20,7 @@ public static class IdentityEndpoints
         {
             var result = await sender.Send(command);
             return result.IsSuccess ? Results.Ok(result.Value) : Results.Json(new { error = result.Error }, statusCode: StatusCodes.Status401Unauthorized);
-        }).WithTags("Auth").AllowAnonymous();
+        }).WithTags("Auth").AllowAnonymous().RequireRateLimiting("LoginRateLimit");
 
         var roles = app.MapGroup("/api/v1/admin/roles").WithTags("Admin - Roles").RequireSystemAdmin();
 

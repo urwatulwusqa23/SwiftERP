@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { HashRouter, Navigate, Route, Routes, useNavigate } from "react-router-dom";
+import { HashRouter, Navigate, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import { Nav } from "./components/Nav";
 import { Dashboard } from "./pages/Dashboard";
 import { Inventory } from "./pages/Inventory";
@@ -50,15 +50,22 @@ function SessionExpiryWatcher() {
   return null;
 }
 
+function RedirectIfAuthenticated({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
+  if (user) return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function AppShell() {
   const { user } = useAuth();
+  const location = useLocation();
 
   return (
     <>
       <SessionExpiryWatcher />
-      {user && <Nav />}
+      {user && location.pathname !== "/login" && <Nav />}
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<RedirectIfAuthenticated><Login /></RedirectIfAuthenticated>} />
         <Route path="/" element={<RequireAuth><Dashboard /></RequireAuth>} />
         <Route
           path="/inventory"

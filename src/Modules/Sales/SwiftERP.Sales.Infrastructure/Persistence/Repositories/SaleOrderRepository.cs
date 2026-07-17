@@ -10,6 +10,12 @@ public class SaleOrderRepository(SalesDbContext dbContext) : ISaleOrderRepositor
             .Include(so => so.Lines)
             .FirstOrDefaultAsync(so => so.Id == id, cancellationToken);
 
+    public Task<List<SaleOrder>> GetAllAsync(CancellationToken cancellationToken) =>
+        dbContext.SaleOrders
+            .Include(so => so.Lines)
+            .OrderByDescending(so => so.CreatedAtUtc)
+            .ToListAsync(cancellationToken);
+
     public Task<int> GetDraftCountAsync(CancellationToken cancellationToken) =>
         dbContext.SaleOrders.CountAsync(so => so.Status == SaleOrderStatus.Draft, cancellationToken);
 

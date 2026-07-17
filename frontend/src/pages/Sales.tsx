@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { api, type SaleOrder } from "../api/client";
 import { useAuth } from "../auth/AuthContext";
@@ -13,6 +13,12 @@ export function Sales() {
   const [orders, setOrders] = useState<SaleOrder[]>([]);
   const [message, setMessage] = useState<string | null>(null);
 
+  const refresh = () => api.getSaleOrders().then(setOrders).catch(() => {});
+
+  useEffect(() => {
+    refresh();
+  }, []);
+
   const handleCreate = async () => {
     setMessage(null);
     if (!form.productId) {
@@ -20,13 +26,12 @@ export function Sales() {
       return;
     }
     try {
-      const created = await api.createSaleOrder({
+      await api.createSaleOrder({
         customerId: crypto.randomUUID(),
         lines: [{ productId: form.productId, quantity: Number(form.quantity), unitPrice: Number(form.unitPrice) }],
       });
-      const order = await api.getSaleOrder(created.id);
-      setOrders((prev) => [order, ...prev]);
       setMessage("Draft sale order created.");
+      refresh();
     } catch (e) {
       setMessage(String(e));
     }
@@ -36,8 +41,7 @@ export function Sales() {
     setMessage(null);
     try {
       await api.confirmSaleOrder(id);
-      const refreshed = await api.getSaleOrder(id);
-      setOrders((prev) => prev.map((o) => (o.id === id ? refreshed : o)));
+      refresh();
     } catch (e) {
       setMessage(`Confirm failed — ${e}`);
     }
@@ -93,11 +97,11 @@ export function Sales() {
 
         <Panel>
           <div className="label" style={{ marginBottom: "0.9rem" }}>
-            Orders This Session ({orders.length})
+            Sale Orders ({orders.length})
           </div>
           {orders.length === 0 && (
             <p style={{ color: "var(--text-faint)", fontSize: "0.85rem" }}>
-              No orders created yet. Copy a Product ID from the Inventory tab to get started.
+              No orders yet. Copy a Product ID from the Inventory tab to get started.
             </p>
           )}
           <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
