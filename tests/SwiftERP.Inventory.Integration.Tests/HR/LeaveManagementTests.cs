@@ -20,7 +20,7 @@ public class LeaveManagementTests(SqlServerContainerFixture fixture) : IAsyncLif
     public Task InitializeAsync()
     {
         _factory = new SwiftErpApiFactory(fixture.ConnectionString, fixture.RedisConnectionString);
-        _client = _factory.CreateClient();
+        _client = _factory.CreateAuthenticatedClient();
         return Task.CompletedTask;
     }
 

@@ -35,6 +35,8 @@
     <ProjectReference Include="..\..\src\Modules\HR\SwiftERP.HR.Application\SwiftERP.HR.Application.csproj" />
     <ProjectReference Include="..\..\src\Modules\HR\SwiftERP.HR.Infrastructure\SwiftERP.HR.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\Modules\HR\SwiftERP.HR.Domain\SwiftERP.HR.Domain.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\SwiftERP.Identity.Application\SwiftERP.Identity.Application.csproj" />
+    <ProjectReference Include="..\..\src\Modules\Identity\SwiftERP.Identity.Domain\SwiftERP.Identity.Domain.csproj" />
   </ItemGroup>
 
 </Project>

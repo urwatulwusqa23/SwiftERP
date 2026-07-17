@@ -23,7 +23,7 @@ public class SaleOrderConfirmationTests(SqlServerContainerFixture fixture) : IAs
     public Task InitializeAsync()
     {
         _factory = new SwiftErpApiFactory(fixture.ConnectionString, fixture.RedisConnectionString);
-        _client = _factory.CreateClient();
+        _client = _factory.CreateAuthenticatedClient();
         return Task.CompletedTask;
     }
 
