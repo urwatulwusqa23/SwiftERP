@@ -1,16 +1,17 @@
 services:
-  sqlserver:
-    image: mcr.microsoft.com/mssql/server:2022-latest
-    container_name: swifterp-sqlserver
+  postgres:
+    image: postgres:17-alpine
+    container_name: swifterp-postgres
     environment:
-      ACCEPT_EULA: "Y"
-      MSSQL_SA_PASSWORD: "SwiftERP_Local_2026!"
+      POSTGRES_USER: swifterp
+      POSTGRES_PASSWORD: "SwiftERP_Local_2026!"
+      POSTGRES_DB: SwiftErpDb
     ports:
-      - "1433:1433"
+      - "5433:5432"
     volumes:
-      - swifterp-sqlserver-data:/var/opt/mssql
+      - swifterp-postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q 'SELECT 1' || exit 1"]
+      test: ["CMD-SHELL", "pg_isready -U swifterp -d SwiftErpDb"]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -27,4 +28,4 @@ services:
       retries: 10
 
 volumes:
-  swifterp-sqlserver-data:
+  swifterp-postgres-data:

@@ -15,7 +15,7 @@ public static class DependencyInjection
     {
         // See SwiftERP.Inventory.Infrastructure.DependencyInjection for why this reads the
         // connection string lazily inside the options delegate rather than as a captured variable.
-        services.AddDbContext<FinanceDbContext>(options => options.UseSqlServer(
+        services.AddDbContext<FinanceDbContext>(options => options.UseNpgsql(
             configuration.GetConnectionString("SwiftErpDb")
                 ?? throw new InvalidOperationException("Connection string 'SwiftErpDb' is not configured.")));
 

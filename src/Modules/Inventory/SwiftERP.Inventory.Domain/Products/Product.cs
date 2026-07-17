@@ -9,7 +9,9 @@ public class Product : Entity
     public int QuantityOnHand { get; private set; }
     public int ReorderThreshold { get; private set; }
     public Guid SupplierId { get; private set; }
-    public byte[] RowVersion { get; private set; } = default!;
+    // SQL Server's rowversion (byte[]) has no Postgres equivalent — Npgsql's idiomatic optimistic
+    // concurrency token is the xmin system column, which is a uint.
+    public uint RowVersion { get; private set; }
 
     private Product()
     {

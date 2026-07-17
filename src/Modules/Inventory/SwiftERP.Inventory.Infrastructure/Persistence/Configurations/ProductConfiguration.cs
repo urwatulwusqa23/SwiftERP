@@ -22,7 +22,13 @@ public class ProductConfiguration : IEntityTypeConfiguration<Product>
         builder.Property(p => p.ReorderThreshold).IsRequired();
         builder.Property(p => p.SupplierId).IsRequired();
 
-        builder.Property(p => p.RowVersion).IsRowVersion();
+        // Maps to Postgres's xmin system column — Npgsql bumps it automatically on every UPDATE,
+        // giving the same "reject a stale write" behavior SQL Server's rowversion provided.
+        builder.Property(p => p.RowVersion)
+            .HasColumnName("xmin")
+            .HasColumnType("xid")
+            .ValueGeneratedOnAddOrUpdate()
+            .IsRowVersion();
 
         builder.Ignore(p => p.DomainEvents);
     }

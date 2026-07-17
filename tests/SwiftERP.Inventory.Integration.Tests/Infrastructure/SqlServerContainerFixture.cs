@@ -3,15 +3,17 @@ using SwiftERP.Finance.Infrastructure.Persistence;
 using SwiftERP.HR.Infrastructure.Persistence;
 using SwiftERP.Inventory.Infrastructure.Persistence;
 using SwiftERP.Sales.Infrastructure.Persistence;
-using Testcontainers.MsSql;
+using Testcontainers.PostgreSql;
 using Testcontainers.Redis;
 
 namespace SwiftERP.Inventory.Integration.Tests.Infrastructure;
 
+// Name kept as SqlServerContainerFixture/SqlServerCollection despite now running Postgres — this
+// is test-project-internal naming, not worth a mass rename across every test file mid-migration.
 public class SqlServerContainerFixture : IAsyncLifetime
 {
-    private readonly MsSqlContainer _sqlContainer =
-        new MsSqlBuilder("mcr.microsoft.com/mssql/server:2022-latest").Build();
+    private readonly PostgreSqlContainer _sqlContainer =
+        new PostgreSqlBuilder("postgres:17-alpine").Build();
 
     private readonly RedisContainer _redisContainer =
         new RedisBuilder("redis:7-alpine").Build();
@@ -52,16 +54,16 @@ public class SqlServerContainerFixture : IAsyncLifetime
     public InventoryDbContext CreateDbContext() => CreateInventoryDbContext();
 
     public InventoryDbContext CreateInventoryDbContext() =>
-        new(new DbContextOptionsBuilder<InventoryDbContext>().UseSqlServer(ConnectionString).Options, Publisher);
+        new(new DbContextOptionsBuilder<InventoryDbContext>().UseNpgsql(ConnectionString).Options, Publisher);
 
     public FinanceDbContext CreateFinanceDbContext() =>
-        new(new DbContextOptionsBuilder<FinanceDbContext>().UseSqlServer(ConnectionString).Options);
+        new(new DbContextOptionsBuilder<FinanceDbContext>().UseNpgsql(ConnectionString).Options);
 
     public SalesDbContext CreateSalesDbContext() =>
-        new(new DbContextOptionsBuilder<SalesDbContext>().UseSqlServer(ConnectionString).Options, Publisher);
+        new(new DbContextOptionsBuilder<SalesDbContext>().UseNpgsql(ConnectionString).Options, Publisher);
 
     public HrDbContext CreateHrDbContext() =>
-        new(new DbContextOptionsBuilder<HrDbContext>().UseSqlServer(ConnectionString).Options, Publisher);
+        new(new DbContextOptionsBuilder<HrDbContext>().UseNpgsql(ConnectionString).Options, Publisher);
 }
 
 [CollectionDefinition(Name)]

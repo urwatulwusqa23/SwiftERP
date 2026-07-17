@@ -18,7 +18,7 @@ public static class DependencyInjection
         // captured beforehand) so it re-reads IConfiguration at DbContext-creation time. Reading
         // it eagerly here would bake in whatever appsettings.json says before test hosts like
         // WebApplicationFactory get a chance to override ConnectionStrings:SwiftErpDb.
-        services.AddDbContext<InventoryDbContext>(options => options.UseSqlServer(
+        services.AddDbContext<InventoryDbContext>(options => options.UseNpgsql(
             configuration.GetConnectionString("SwiftErpDb")
                 ?? throw new InvalidOperationException("Connection string 'SwiftErpDb' is not configured.")));
 
