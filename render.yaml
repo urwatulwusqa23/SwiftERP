@@ -1,8 +1,3 @@
-databases:
-  - name: swifterp-db
-    plan: free
-    postgresMajorVersion: "17"
-
 services:
   - type: web
     name: swifterp-api
@@ -13,12 +8,11 @@ services:
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production
+      # Render's free Postgres is one-per-account, and that slot's already used elsewhere, so
+      # this points at an external Postgres instead (e.g. Neon's free tier). Npgsql accepts a
+      # standard postgresql://user:pass@host/db?sslmode=require URL directly — no reformatting.
       - key: ConnectionStrings__SwiftErpDb
-        fromDatabase:
-          name: swifterp-db
-          property: connectionString
-      # Render's managed Postgres connection string is libpq/psql-style (postgresql://...),
-      # which Npgsql also accepts directly — no reformatting needed.
+        sync: false # paste the Neon (or other external Postgres) connection string here
       - key: ConnectionStrings__Redis
         sync: false # fill in manually — see the Redis note in the deployment README section
       - key: Jwt__SigningKey

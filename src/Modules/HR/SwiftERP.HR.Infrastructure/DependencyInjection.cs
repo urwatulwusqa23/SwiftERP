@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SwiftERP.SharedKernel;
 using SwiftERP.HR.Application.Abstractions;
 using SwiftERP.HR.Domain.Attendance;
 using SwiftERP.HR.Domain.Employees;
@@ -21,8 +22,9 @@ public static class DependencyInjection
         // See SwiftERP.Inventory.Infrastructure.DependencyInjection for why the connection string
         // is read lazily inside the options delegate rather than as a captured variable.
         services.AddDbContext<HrDbContext>(options => options.UseNpgsql(
-            configuration.GetConnectionString("SwiftErpDb")
-                ?? throw new InvalidOperationException("Connection string 'SwiftErpDb' is not configured.")));
+            PostgresConnectionString.Normalize(
+                configuration.GetConnectionString("SwiftErpDb")
+                    ?? throw new InvalidOperationException("Connection string 'SwiftErpDb' is not configured."))));
 
         services.AddScoped<IUnitOfWork>(sp => sp.GetRequiredService<HrDbContext>());
         services.AddScoped<IEmployeeRepository, EmployeeRepository>();
