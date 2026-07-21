@@ -13,8 +13,10 @@ services:
       # standard postgresql://user:pass@host/db?sslmode=require URL directly — no reformatting.
       - key: ConnectionStrings__SwiftErpDb
         sync: false # paste the Neon (or other external Postgres) connection string here
-      # Render has no free managed Redis — paste a free Upstash Redis connection string here.
-      # Accepts either Upstash's rediss:// URI or StackExchange.Redis's native format.
+      # Optional — Render has no free managed Redis. Leave this blank to deploy without it (the
+      # dashboard falls back to an in-memory cache and live notifications are simply disabled);
+      # paste a free Upstash/Redis Cloud connection string here later to enable them, no code
+      # changes needed either way. Accepts a rediss:// URI or StackExchange.Redis's native format.
       - key: ConnectionStrings__Redis
         sync: false
       - key: Jwt__SigningKey

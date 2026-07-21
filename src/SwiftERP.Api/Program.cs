@@ -149,19 +149,36 @@ try
                 }));
     });
 
-    // Options delegates (AddStackExchangeRedisCache) and DI factory delegates (AddSingleton) both
-    // resolve lazily on first use, not at registration time, so — unlike the DbContext connection
-    // string bug fixed in Phase 2 — reading configuration here is safe for test-time overrides.
-    // Normalize() handles managed providers (Upstash included) that hand out a redis:// URI
-    // instead of StackExchange.Redis's native "host:port,password=..." format.
-    builder.Services.AddStackExchangeRedisCache(options =>
-        options.Configuration = RedisConnectionString.Normalize(builder.Configuration.GetConnectionString("Redis")!));
+    // Redis is optional at deploy time (no free managed Redis on Render, and free third-party
+    // options can be flaky) — when no connection string is configured, fall back to an in-memory
+    // cache and a no-op publisher rather than failing to start. The dashboard still works (just
+    // without cross-instance sharing); only the instant SSE push is lost.
+    var redisConnectionString = builder.Configuration.GetConnectionString("Redis");
+    if (string.IsNullOrWhiteSpace(redisConnectionString))
+    {
+        builder.Services.AddDistributedMemoryCache();
+        builder.Services.AddSingleton<INotificationPublisher, NoOpNotificationPublisher>();
+        // IConnectionMultiplexer is deliberately left unregistered — NotificationStreamEndpoints
+        // resolves it via GetService (not a minimal-API parameter) specifically so "no
+        // registration at all" resolves to null instead of throwing.
+    }
+    else
+    {
+        // Options delegates (AddStackExchangeRedisCache) and DI factory delegates (AddSingleton)
+        // both resolve lazily on first use, not at registration time, so — unlike the DbContext
+        // connection string bug fixed in Phase 2 — reading configuration here is safe for
+        // test-time overrides. Normalize() handles managed providers (Upstash included) that hand
+        // out a redis:// URI instead of StackExchange.Redis's native "host:port,password=..."
+        // format.
+        builder.Services.AddStackExchangeRedisCache(options =>
+            options.Configuration = RedisConnectionString.Normalize(builder.Configuration.GetConnectionString("Redis")!));
 
-    builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-        ConnectionMultiplexer.Connect(RedisConnectionString.Normalize(
-            sp.GetRequiredService<IConfiguration>().GetConnectionString("Redis")!)));
+        builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
+            ConnectionMultiplexer.Connect(RedisConnectionString.Normalize(
+                sp.GetRequiredService<IConfiguration>().GetConnectionString("Redis")!)));
 
-    builder.Services.AddSingleton<INotificationPublisher, RedisNotificationPublisher>();
+        builder.Services.AddSingleton<INotificationPublisher, RedisNotificationPublisher>();
+    }
 
     // Discovers the Api-layer INotificationHandler<T> classes in SwiftERP.Api.Notifications.
     // MediatR supports multiple handlers per notification type, so this coexists cleanly with
