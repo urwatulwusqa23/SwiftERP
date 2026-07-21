@@ -152,11 +152,14 @@ try
     // Options delegates (AddStackExchangeRedisCache) and DI factory delegates (AddSingleton) both
     // resolve lazily on first use, not at registration time, so — unlike the DbContext connection
     // string bug fixed in Phase 2 — reading configuration here is safe for test-time overrides.
+    // Normalize() handles managed providers (Upstash included) that hand out a redis:// URI
+    // instead of StackExchange.Redis's native "host:port,password=..." format.
     builder.Services.AddStackExchangeRedisCache(options =>
-        options.Configuration = builder.Configuration.GetConnectionString("Redis"));
+        options.Configuration = RedisConnectionString.Normalize(builder.Configuration.GetConnectionString("Redis")!));
 
     builder.Services.AddSingleton<IConnectionMultiplexer>(sp =>
-        ConnectionMultiplexer.Connect(sp.GetRequiredService<IConfiguration>().GetConnectionString("Redis")!));
+        ConnectionMultiplexer.Connect(RedisConnectionString.Normalize(
+            sp.GetRequiredService<IConfiguration>().GetConnectionString("Redis")!)));
 
     builder.Services.AddSingleton<INotificationPublisher, RedisNotificationPublisher>();
 
