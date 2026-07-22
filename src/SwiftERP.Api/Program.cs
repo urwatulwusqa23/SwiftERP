@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using System.Threading.RateLimiting;
 using FluentValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -186,6 +187,18 @@ try
     builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
 
     var app = builder.Build();
+
+    // Each module owns its own DbContext/migrations; nothing else applies them, so a fresh
+    // database (e.g. a new Postgres instance on Render) would otherwise have no tables at all
+    // and every query would 500. Applying all five here means a deploy is self-sufficient.
+    using (var migrationScope = app.Services.CreateScope())
+    {
+        await migrationScope.ServiceProvider.GetRequiredService<SwiftERP.Identity.Infrastructure.Persistence.IdentityDbContext>().Database.MigrateAsync();
+        await migrationScope.ServiceProvider.GetRequiredService<SwiftERP.Inventory.Infrastructure.Persistence.InventoryDbContext>().Database.MigrateAsync();
+        await migrationScope.ServiceProvider.GetRequiredService<SwiftERP.Sales.Infrastructure.Persistence.SalesDbContext>().Database.MigrateAsync();
+        await migrationScope.ServiceProvider.GetRequiredService<SwiftERP.Finance.Infrastructure.Persistence.FinanceDbContext>().Database.MigrateAsync();
+        await migrationScope.ServiceProvider.GetRequiredService<SwiftERP.HR.Infrastructure.Persistence.HrDbContext>().Database.MigrateAsync();
+    }
 
     app.UseSerilogRequestLogging();
     app.UseMiddleware<ExceptionHandlingMiddleware>();
